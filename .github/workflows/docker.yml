@@ -1,0 +1,41 @@
+name: Fire Smoke Detection CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fire-smoke-detector .
+
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name fire-smoke-app \
+            -p 8501:8501 \
+            fire-smoke-detector
+
+      - name: Wait for Streamlit
+        run: sleep 20
+
+      - name: Test Streamlit application
+        run: curl --fail http://localhost:8501
+
+      - name: Show container logs
+        if: always()
+        run: docker logs fire-smoke-app
+
+      - name: Stop container
+        if: always()
+        run: docker stop fire-smoke-app || true
